@@ -17,5 +17,4 @@ SOURCES += main.cpp\
 
 HEADERS  += window.h
 
-INCLUDEPATH += /usr/include/qwt
-LIBS += -L/usr/lib -lqwt
+CONFIG += qwt
