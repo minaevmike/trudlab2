@@ -119,7 +119,8 @@ void Window::calculate(){
     int a = 1, b = 9;
     double du2Coef = 20;
     double duCoef = -5;
-    double freeCoef = 3;
+    double uCoef = 3;
+    double freeCoef = 0;
     double duNach = -6;
     double uNach = 10;
     if(el20->isChecked()){
@@ -128,38 +129,39 @@ void Window::calculate(){
     else{
         n = 40;
     }
-    solve(n, a ,b,du2Coef, duCoef, freeCoef,duNach, uNach);
+    solve(n, a ,b,du2Coef, duCoef, uCoef, freeCoef,duNach, uNach);
     //QMessageBox::information(0, "", s);
 }
 
-QVector<double> Window::solveProgon(QVector<QVector<double> > &matrix, QVector<double> v){
+QVector<double> Window::solveProgon(QVector<QVector<double> > &matrix, QVector<double> v, int index){
     QVector<double> P, Q, ans;
     int N = v.size();
     P.resize(N);
     ans.resize(N);
     Q.resize(N);
-    P[1] = - matrix[1][2] / matrix[1][1];
-    Q[1] = v[1]/matrix[1][1];
+    P[index] = - matrix[index][index + 1] / matrix[index][index];
+    Q[index] = v[index]/matrix[index][index];
     //Pr9moy xod
-    for(int i = 2; i < N - 1; ++i){
+    for(int i = index + 1; i < N - 2 + index; ++i){
         P[i] = matrix[i][i+1]/(-matrix[i][i] - matrix[i][i-1]*P[i-1]);
         Q[i] =  (matrix[i][i-1] * Q[i-1] - v[i]) / (-matrix[i][i] - matrix[i][i-1] * P[i-1]);
     }
+
     //Obratniy xod
-    ans[N-1] = (matrix[N-1][N-2] * Q[N-2] - v[N-1])/(-matrix[N-1][N-1] - matrix[N-1][N-2]*P[N-2]);
-    for(int i = N - 2; i > 0; --i){
+    ans[N - 2 + index] = (matrix[N - 2 + index][N - 3 + index] * Q[N - 3 + index] - v[N - 2 + index])/(-matrix[N - 2 + index][N - 2 + index] - matrix[N - 2 + index][N - 3 + index]*P[N - 3 + index]);
+    for(int i = N - 3 + index; i >= 0; --i){
         ans[i] = P[i] * ans[i+1] + Q[i];
     }
     return ans;
 }
 
-void Window::fillLinear(QVector<QVector<double> > &matrix, double L, double du2Coef, double duCoef, double freeCoef){
+void Window::fillLinear(QVector<QVector<double> > &matrix, double L, double du2Coef, double duCoef, double uCoef, double freeCoef){
     int N = matrix.size();
     for(int i = 0; i < N - 1; ++i){
-        matrix[i][i] += L / 3 * freeCoef  - duCoef / 2 - (double)du2Coef/L;
-        matrix[i][i+1] += L / 6 * freeCoef + duCoef / 2 + (double)du2Coef/L;
-        matrix[i+1][i] += L / 6 * freeCoef - duCoef / 2 + (double)du2Coef/L;
-        matrix[i+1][i+1] += L / 3 * freeCoef + duCoef / 2- (double)du2Coef/L;
+        matrix[i][i] += L / 3 * uCoef  - duCoef / 2 - (double)du2Coef/L;
+        matrix[i][i+1] += L / 6 * uCoef + duCoef / 2 + (double)du2Coef/L;
+        matrix[i+1][i] += L / 6 * uCoef - duCoef / 2 + (double)du2Coef/L;
+        matrix[i+1][i+1] += L / 3 * uCoef + duCoef / 2- (double)du2Coef/L;
     }
 }
 
@@ -173,7 +175,7 @@ QVector<double> Window::analiticSolve(int N, double a, double L){
     return analitic;
 }
 
-void Window::solve(int N, double a, double b, double du2Coef, double duCoef, double freeCoef, double duNach, double uNach){
+void Window::solve(int N, double a, double b, double du2Coef, double duCoef,double uCoef, double freeCoef, double duNach, double uNach){
     double L = (double)(b - a)/N;
     N++;
     QVector<QVector<double> > matrix;
@@ -184,13 +186,16 @@ void Window::solve(int N, double a, double b, double du2Coef, double duCoef, dou
     for(int i = 0; i < N; ++i){
         matrix[i].resize(N);
     }
-
-    fillLinear(matrix, L, du2Coef, duCoef, freeCoef);
-
-    v[1] = -matrix[1][0] * uNach;
+    int index = 1;
+    for(int i = 0; i < 0; i++){
+        v[i] = -freeCoef * L;
+    }
+    fillLinear(matrix, L, du2Coef, duCoef, uCoef, freeCoef);
+    //there should be taken into account boundary conditions
+    v[1] = -matrix[index][0] * uNach;
     v[N-1] = - duNach * du2Coef;
 
-    ans = solveProgon(matrix, v);
+    ans = solveProgon(matrix, v, index);
 
     ans[0] = uNach;
 
