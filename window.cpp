@@ -5,7 +5,26 @@ Window::Window(QWidget *parent)
 {
     funPlot = new QwtPlot;
     funPlot->setTitle(QwtText("MKE"));
+    funPlot->setAxisTitle(QwtPlot::yLeft, "u");
+    funPlot->setAxisTitle(QwtPlot::xBottom, "x");
     funPlot->insertLegend(new QwtLegend());
+    funPlot->setCanvasBackground(Qt::white);
+
+    QwtPlotGrid *plotGrid = new QwtPlotGrid();
+    plotGrid->setMajorPen(QPen(Qt::gray));
+    plotGrid->attach(funPlot);
+
+    QwtPlotMagnifier *magnifier = new QwtPlotMagnifier(funPlot->canvas());
+    magnifier->setMouseButton(Qt::MidButton);
+
+    QwtPlotPanner *panner = new QwtPlotPanner(funPlot->canvas());
+    panner->setMouseButton(Qt::RightButton);
+
+    QwtPlotPicker *picker = new QwtPlotPicker(QwtPlot::xBottom, QwtPlot::yLeft, QwtPlotPicker::CrossRubberBand, QwtPicker::ActiveOnly, funPlot->canvas());
+    picker->setRubberBandPen(QColor(Qt::green));
+    picker->setTrackerPen(QColor(Qt::black));
+    picker->setStateMachine(new QwtPickerDragPointMachine());
+
     // Create curves and attach them to plots
     QPen rPen = QPen(Qt::red);
     QPen bPen = QPen(Qt::blue);
@@ -15,7 +34,7 @@ Window::Window(QWidget *parent)
     aCurve = new QwtPlotCurve;
     aCurve->setRenderHint(QwtPlotItem::RenderAntialiased);
     aCurve->setPen(rPen);
-    aCurve->setTitle("Analit");
+    aCurve->setTitle("Analitic");
     aCurve->attach(funPlot);
 
     rCurve = new QwtPlotCurve;
