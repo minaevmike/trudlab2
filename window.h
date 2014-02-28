@@ -49,13 +49,15 @@ private:
     QCheckBox *checkBoxMKE, *checkBoxAnalitic;
     QLabel *error;
     QPushButton *solveButton;
-    void solve(int N, double a, double b, double du2Coef, double duCoef, double uCoef,double freeCoef, double duNach, double uNach);
+    void solve(int N, double a, double b, double du2Coef, double duCoef, double uCoef,double freeCoef, double duNach, double uNach, int method = 1);
     QRadioButton *el40, *el20, *linearForm, *quadraticForm;
     void print(QVector<QVector<double> > matrix);
     void print(QVector<double> v);
     QVector<double> solveProgon(QVector<QVector<double> > &matrix, QVector<double> v, int index);
     void fillLinear(QVector<QVector<double> > &matrix, double L, double du2Coef, double duCoef, double uCoef, double freeCoef);
+    void fillQuadratic(QVector<QVector<double> > &matrix, double L, double du2Coef, double duCoef, double uCoef, double freeCoef);
     QVector<double> analiticSolve(int N, double a, double L);
+    int lcm(int x, int y);
 
 private slots:
     void calculate();

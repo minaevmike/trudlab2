@@ -50,7 +50,7 @@ Window::Window(QWidget *parent)
     //plotsLayout->addWidget(derPlot);
 
     QHBoxLayout *grid = new QHBoxLayout;
-    //grid->addWidget(createTypeGroup());
+    grid->addWidget(createTypeGroup());
     grid->addWidget(createNumberGroup());
     grid->addWidget(createNonExclusiveGroup());
     grid->addWidget(createPushButtonGroup());
@@ -148,7 +148,12 @@ void Window::calculate(){
     else{
         n = 40;
     }
-    solve(n, a ,b,du2Coef, duCoef, uCoef, freeCoef,duNach, uNach);
+    int method;
+    if(linearForm->isChecked())
+        method = 1;
+    else
+        method = 2;
+    solve(n, a ,b,du2Coef, duCoef, uCoef, freeCoef,duNach, uNach, method);
     //QMessageBox::information(0, "", s);
 }
 
@@ -194,7 +199,43 @@ QVector<double> Window::analiticSolve(int N, double a, double L){
     return analitic;
 }
 
-void Window::solve(int N, double a, double b, double du2Coef, double duCoef,double uCoef, double freeCoef, double duNach, double uNach){
+void Window::fillQuadratic(QVector<QVector<double> > &matrix, double L, double du2Coef, double duCoef, double uCoef, double freeCoef){
+    int N = matrix.size();
+    QVector<QVector<double> > temp;
+    temp.resize(3);
+    for(int i = 0; i < 3; ++i){
+        temp[i].resize(3 + 1);
+    }
+    //Filling
+    temp[0][0] = - du2Coef * 16 / (3 * L) + duCoef * 0 + uCoef * 8 * L / 15;
+    temp[0][1] = - du2Coef * - 8 / (3 * L) + duCoef * -2 /3 + uCoef * 1 * L / 15;
+    temp[0][2] = - du2Coef * - 8 / (3 * L) + duCoef * 2 / 3 + uCoef * 1 * L / 15;
+    temp[1][0] = - du2Coef * - 8 / (3 * L) + duCoef * 2 /3 + uCoef * 1 * L / 15 ;
+    temp[1][1] = - du2Coef * 7 / (3 * L) + duCoef * - 1 /2 + uCoef * 2 * L / 15;
+    temp[1][2] = - du2Coef * 1 / (3 * L) + duCoef * - 1 /6 + uCoef * -1 * L / 30;
+    temp[2][0] = - du2Coef * - 8 / (3 * L) + duCoef * - 2 /3 + uCoef * 1 * L / 15;
+    temp[2][1] = - du2Coef * 1 / (3 * L) + duCoef * 1 / 6 + uCoef * -1 * L / 30;
+    temp[2][2] = - du2Coef * 7 / (3 * L) + duCoef * 1 / 2 + uCoef * 2 * L / 15;
+    //Transofrm
+    temp[0][1] /= temp[0][0];
+    temp[0][2] /= temp[0][0];
+    temp[0][0] = 1;
+    temp[1][1] -= temp[0][1] * temp[1][0];
+    temp[1][2] -= temp[0][2] * temp[1][0];
+    temp[1][0] = 0;
+    temp[2][1] -= temp[0][1] * temp[2][0];
+    temp[2][2] -= temp[0][2] * temp[2][0];
+    temp[2][0] = 0;
+    //print(temp);
+    for(int i = 0; i < N - 1; ++i){
+        matrix[i][i] += temp[1][1];
+        matrix[i][i+1] += temp[1][2];
+        matrix[i+1][i] += temp[2][1];
+        matrix[i+1][i+1] += temp[2][2];
+    }
+}
+
+void Window::solve(int N, double a, double b, double du2Coef, double duCoef,double uCoef, double freeCoef, double duNach, double uNach, int method){
     double L = (double)(b - a)/N;
     N++;
     QVector<QVector<double> > matrix;
@@ -209,15 +250,20 @@ void Window::solve(int N, double a, double b, double du2Coef, double duCoef,doub
     for(int i = 0; i < 0; i++){
         v[i] = -freeCoef * L;
     }
-    fillLinear(matrix, L, du2Coef, duCoef, uCoef, freeCoef);
+    if(method == 1){
+        fillLinear(matrix, L, du2Coef, duCoef, uCoef, freeCoef);
+    }
+    else {
+        fillQuadratic(matrix, L, du2Coef, duCoef, uCoef, freeCoef);
+    }
     //there should be taken into account boundary conditions
     v[1] = -matrix[index][0] * uNach;
     v[N-1] = - duNach * du2Coef;
-
+    //std::cout << v[1] << " " << v[N-1] << std::endl;
     ans = solveProgon(matrix, v, index);
 
     ans[0] = uNach;
-
+    //std::cout << matrix[0][0] << std::endl;
     QVector<double> analitic = analiticSolve(N, a, L);
 
     QPolygonF aC, rC;
@@ -230,8 +276,8 @@ void Window::solve(int N, double a, double b, double du2Coef, double duCoef,doub
         aC << QPointF(x, ans[i]);
         rC << QPointF(x, analitic[i]);
     }
-    aCurve->setSamples(aC);
-    rCurve->setSamples(rC);
+    aCurve->setSamples(rC);
+    rCurve->setSamples(aC);
     error->setText(QString("Максимальная ошибка - ") + QString::number(maxError));
     funPlot->replot();
 }
@@ -265,4 +311,14 @@ void Window::realCheck(int state){
 Window::~Window()
 {
 
+}
+
+int Window::lcm(int x, int y){
+    int t;
+    while (y != 0) {
+          t = y;
+          y = x % y;
+          x = t;
+    }
+    return x;
 }
